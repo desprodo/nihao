@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>恋爱军师 - AI 助你读懂 TA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff0f3 0%, #ffe4e9 50%, #ffdde5 100%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .heart-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .heart {
+            position: absolute;
+            color: rgba(255, 182, 193, 0.2);
+            animation: float 15s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-30px) rotate(10deg); opacity: 0.6; }
+        }
+
+        .upload-zone {
+            background: linear-gradient(135deg, rgba(255, 240, 245, 0.9), rgba(255, 228, 235, 0.9));
+            border: 2px dashed #ff9eb5;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            background: linear-gradient(135deg, rgba(255, 235, 240, 0.95), rgba(255, 220, 230, 0.95));
+            border-color: #ff6b8a;
+            transform: scale(1.02);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b8a 0%, #ff8fa3 50%, #ffb3c1 100%);
+            box-shadow: 0 4px 15px rgba(255, 107, 138, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 138, 0.5);
+        }
+
+        .btn-primary:disabled {
+            background: linear-gradient(135deg, #ccc 0%, #ddd 100%);
+            cursor: not-allowed;
+        }
+
+        .thumbnail-item {
+            transition: all 0.3s ease;
+        }
+
+        .thumbnail-item:hover {
+            transform: scale(1.05);
+        }
+
+        .thumbnail-item .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .thumbnail-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-left: 4px solid #ff6b8a;
+            animation: slideIn 0.5s ease forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(255, 107, 138, 0.2);
+            border-top-color: #ff6b8a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .typing-text::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .tag {
+            background: linear-gradient(135deg, #ffe4e9, #ffdde5);
+            color: #d63384;
+        }
+
+        .star-filled {
+            color: #ffb700;
+        }
+
+        .star-empty {
+            color: #ddd;
+        }
+    </style>
+</head>
+<body class="relative">
+    <!-- 背景爱心装饰 -->
+    <div class="heart-bg">
+        <div class="heart" style="top: 10%; left: 5%; font-size: 24px;">💕</div>
+        <div class="heart" style="top: 20%; right: 10%; font-size: 32px; animation-delay: 2s;">💖</div>
+        <div class="heart" style="top: 60%; left: 8%; font-size: 20px; animation-delay: 4s;">💗</div>
+        <div class="heart" style="top: 70%; right: 5%; font-size: 28px; animation-delay: 1s;">💝</div>
+        <div class="heart" style="top: 40%; left: 15%; font-size: 16px; animation-delay: 3s;">💓</div>
+        <div class="heart" style="top: 80%; left: 50%; font-size: 22px; animation-delay: 5s;">💘</div>
+    </div>
+
+    <div class="relative z-10 container mx-auto px-4 py-8 max-w-lg">
+        <!-- 头部 -->
+        <header class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 mb-4 shadow-lg">
+                <span class="text-3xl">💝</span>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">恋爱军师</h1>
+            <p class="text-pink-600 font-medium">AI 助你读懂 TA 的心</p>
+        </header>
+
+        <!-- 上传区域 -->
+        <div id="uploadSection" class="glass-card rounded-2xl p-6 mb-6">
+            <div
+                id="uploadZone"
+                class="upload-zone rounded-xl p-8 text-center cursor-pointer"
+                onclick="document.getElementById('fileInput').click()"
+            >
+                <input
+                    type="file"
+                    id="fileInput"
+                    multiple
+                    accept="image/*"
+                    class="hidden"
+                    onchange="handleFileSelect(event)"
+                >
+                <div class="text-5xl mb-3">📸</div>
+                <p class="text-gray-700 font-medium mb-2">点击或拖拽上传截图</p>
+                <p class="text-sm text-gray-500">至少上传 5 张朋友圈截图</p>
+                <p class="text-xs text-gray-400 mt-1">支持 JPG、PNG 格式</p>
+            </div>
+
+            <!-- 缩略图预览 -->
+            <div id="previewArea" class="hidden mt-4">
+                <p class="text-sm text-gray-600 mb-3">
+                    已上传 <span id="imageCount" class="font-bold text-pink-600">0</span> 张
+                    <span id="countHint" class="text-xs text-gray-400 ml-2">(还需 <span id"needCount">5</span> 张)</span>
+                </p>
+                <div id="thumbnailGrid" class="grid grid-cols-4 gap-2">
+                    <!-- 动态生成缩略图 -->
+                </div>
+            </div>
+
+            <!-- 开始分析按钮 -->
+            <button
+                id="analyzeBtn"
+                onclick="startAnalysis()"
+                disabled
+                class="btn-primary w-full mt-6 py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-2"
+            >
+                <span id="btnText">开始分析</span>
+                <span id="btnIcon">💕</span>
+            </button>
+        </div>
+
+        <!-- 分析中状态 -->
+        <div id="loadingSection" class="hidden glass-card rounded-2xl p-8 text-center">
+            <div class="loading-spinner w-16 h-16 mx-auto mb-6"></div>
+            <p id="loadingText" class="text-lg text-gray-700 font-medium typing-text">AI 正在分析中...</p>
+            <p class="text-sm text-gray-500 mt-2">预计需要 30-60 秒</p>
+        </div>
+
+        <!-- 结果展示区域 -->
+        <div id="resultSection" class="hidden">
+            <!-- TA 的画像 -->
+            <div class="result-card rounded-xl p-5 mb-4" style="animation-delay: 0.1s;">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-2xl">💡</span>
+                    <h3 class="text-lg font-bold text-gray-800">TA 的画像</h3>
+                </div>
+                <div id="profileContent">
+                    <!-- 动态内容 -->
+                </div>
+            </div>
+
+            <!-- 追求策略 -->
+            <div class="result-card rounded-xl p-5 mb-4" style="animation-delay: 0.3s;">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-2xl">🎯</span>
+                    <h3 class="text-lg font-bold text-gray-800">追求策略</h3>
+                </div>
+                <div id="strategyContent">
+                    <!-- 动态内容 -->
+                </div>
+            </div>
+
+            <!-- 成功概率 -->
+            <div class="result-card rounded-xl p-5 mb-6" style="animation-delay: 0.5s;">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-2xl">⚡</span>
+                    <h3 class="text-lg font-bold text-gray-800">成功概率</h3>
+                </div>
+                <div id="successRateContent">
+                    <!-- 动态内容 -->
+                </div>
+            </div>
+
+            <!-- 重新分析按钮 -->
+            <button
+                onclick="resetAnalysis()"
+                class="w-full py-4 rounded-xl border-2 border-pink-400 text-pink-600 font-bold text-lg hover:bg-pink-50 transition-colors"
+            >
+                重新分析 💫
+            </button>
+        </div>
+
+        <!-- 底部隐私声明 -->
+        <footer class="text-center mt-8 text-xs text-gray-400">
+            <p>🔒 图片仅用于 AI 分析，分析后即刻删除</p>
+            <p class="mt-1">恋爱军师 · 让追求更有把握</p>
+        </footer>
+    </div>
+
+    <script>
+        // 状态管理
+        let uploadedFiles = [];
+        let isAnalyzing = false;
+
+        // 拖拽上传
+        const uploadZone = document.getElementById('uploadZone');
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            handleFiles(files);
+        });
+
+        // 文件选择处理
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            handleFiles(files);
+        }
+
+        // 处理文件
+        function handleFiles(files) {
+            if (files.length === 0) return;
+
+            uploadedFiles = [...uploadedFiles, ...files].slice(0, 20); // 最多20张
+            updatePreview();
+            updateButtonState();
+        }
+
+        // 更新预览
+        function updatePreview() {
+            const previewArea = document.getElementById('previewArea');
+            const thumbnailGrid = document.getElementById('thumbnailGrid');
+            const imageCount = document.getElementById('imageCount');
+            const countHint = document.getElementById('countHint');
+
+            if (uploadedFiles.length > 0) {
+                previewArea.classList.remove('hidden');
+                imageCount.textContent = uploadedFiles.length;
+
+                const needCount = Math.max(0, 5 - uploadedFiles.length);
+                countHint.innerHTML = needCount > 0
+                    ? `(还需 <span class="text-pink-600 font-bold">${needCount}</span> 张)`
+                    : '<span class="text-green-500">✓ 可以开始分析了</span>';
+
+                thumbnailGrid.innerHTML = uploadedFiles.map((file, index) => `
+                    <div class="thumbnail-item relative aspect-square rounded-lg overflow-hidden border-2 border-pink-200">
+                        <img src="${URL.createObjectURL(file)}" class="w-full h-full object-cover" alt="预览">
+                        <button
+                            onclick="deleteImage(${index})"
+                            class="delete-btn absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                        >×</button>
+                    </div>
+                `).join('');
+            } else {
+                previewArea.classList.add('hidden');
+            }
+        }
+
+        // 删除图片
+        function deleteImage(index) {
+            uploadedFiles.splice(index, 1);
+            updatePreview();
+            updateButtonState();
+        }
+
+        // 更新按钮状态
+        function updateButtonState() {
+            const btn = document.getElementById('analyzeBtn');
+            const btnText = document.getElementById('btnText');
+
+            if (uploadedFiles.length >= 5) {
+                btn.disabled = false;
+                btnText.textContent = '开始分析';
+            } else {
+                btn.disabled = true;
+                btnText.textContent = `还需 ${5 - uploadedFiles.length} 张`;
+            }
+        }
+
+        // Loading 文案轮播
+        const loadingTexts = [
+            'AI 正在分析性格特点...',
+            '正在解读 TA 的兴趣爱好...',
+            '正在生成追求策略...',
+            '军师正在思考中...'
+        ];
+
+        function rotateLoadingText() {
+            const loadingText = document.getElementById('loadingText');
+            let index = 0;
+            return setInterval(() => {
+                index = (index + 1) % loadingTexts.length;
+                loadingText.textContent = loadingTexts[index];
+            }, 2000);
+        }
+
+        // 开始分析
+        async function startAnalysis() {
+            if (uploadedFiles.length < 5 || isAnalyzing) return;
+
+            isAnalyzing = true;
+
+            // 切换界面
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+
+            // 开始轮播文案
+            const textInterval = rotateLoadingText();
+
+            try {
+                // 读取所有图片为 base64
+                const imagePromises = uploadedFiles.map(file => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            // 提取 base64 数据（去掉 data:image/xxx;base64, 前缀）
+                            const base64 = e.target.result.split(',')[1];
+                            resolve(base64);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                });
+
+                const imageBase64List = await Promise.all(imagePromises);
+
+                // 调用后端 API
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        images: imageBase64List
+                    })
+                });
+
+                const result = await response.json();
+
+                // 检查是否出错
+                if (!response.ok || result.code !== 0) {
+                    throw new Error(result.message || '分析失败，请稍后重试');
+                }
+
+                // 显示结果
+                clearInterval(textInterval);
+                displayResult(result.data);
+
+            } catch (error) {
+                clearInterval(textInterval);
+                alert('分析出错：' + error.message);
+                resetAnalysis();
+            }
+        }
+
+        // 显示结果
+        function displayResult(data) {
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('resultSection').classList.remove('hidden');
+
+            // 确保数据结构完整，提供默认值
+            const profile = data.profile || {};
+            const strategy = data.strategy || {};
+            const successRate = data.successRate || {};
+
+            // 渲染 TA 的画像
+            const tags = profile.tags || ['神秘', '有趣', '独特'];
+            const emotionStatus = profile.emotionStatus || '信息不足，建议多观察';
+
+            const profileHtml = `
+                <div class="flex flex-wrap gap-2 mb-3">
+                    ${tags.map(tag => `
+                        <span class="tag px-3 py-1 rounded-full text-sm font-medium">${tag}</span>
+                    `).join('')}
+                </div>
+                <p class="text-gray-600 text-sm">💭 情感状态：<span class="text-gray-800 font-medium">${emotionStatus}</span></p>
+            `;
+            document.getElementById('profileContent').innerHTML = profileHtml;
+
+            // 渲染追求策略
+            const iceBreaker = strategy.iceBreaker || '从朋友圈互动开始，点个赞或留下真诚评论';
+            const topics = strategy.topics || ['美食', '旅行', '电影'];
+            const warning = strategy.warning || '不要操之过急，先做朋友';
+
+            const strategyHtml = `
+                <div class="space-y-3 text-sm">
+                    <div class="bg-pink-50 rounded-lg p-3">
+                        <span class="font-medium text-pink-700">🧊 破冰建议：</span>
+                        <p class="text-gray-700 mt-1">${iceBreaker}</p>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-700">💬 推荐话题：</span>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            ${topics.map(topic => `
+                                <span class="bg-white border border-pink-200 px-3 py-1 rounded-lg text-gray-700">${topic}</span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="bg-amber-50 rounded-lg p-3">
+                        <span class="font-medium text-amber-700">⚠️ 避雷提醒：</span>
+                        <p class="text-gray-700 mt-1">${warning}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('strategyContent').innerHTML = strategyHtml;
+
+            // 渲染成功概率
+            const difficulty = Math.min(5, Math.max(1, successRate.difficulty || 3));
+            const keyAdvice = successRate.keyAdvice || '保持真诚，展现你的优点';
+
+            const stars = Array(5).fill(0).map((_, i) =>
+                i < difficulty ? '★' : '☆'
+            ).join('');
+
+            const difficultyText = ['极易', '容易', '中等', '困难', '极难'][difficulty - 1] || '中等';
+
+            const successRateHtml = `
+                <div class="text-center">
+                    <div class="text-3xl mb-2">
+                        ${stars.split('').map(s =>
+                            s === '★' ? '<span class="star-filled">★</span>' : '<span class="star-empty">★</span>'
+                        ).join('')}
+                    </div>
+                    <p class="text-sm text-gray-500 mb-3">追求难度：${difficultyText}</p>
+                    <div class="bg-gradient-to-r from-pink-100 to-rose-100 rounded-lg p-4">
+                        <span class="font-medium text-pink-700">💡 核心建议：</span>
+                        <p class="text-gray-800 mt-1 font-medium">${keyAdvice}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('successRateContent').innerHTML = successRateHtml;
+
+            // 滚动到结果区域
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // 重新分析
+        function resetAnalysis() {
+            uploadedFiles = [];
+            isAnalyzing = false;
+
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('previewArea').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+
+            updateButtonState();
+
+            // 滚动到顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

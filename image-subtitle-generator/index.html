@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片字幕生成器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">图片字幕生成器</h1>
+
+        <div class="main-content">
+            <!-- 左侧设置面板 -->
+            <div class="panel settings-panel">
+                <!-- 上传图片 -->
+                <div class="section">
+                    <h2 class="section-title">上传图片</h2>
+                    <div class="upload-area" id="uploadArea">
+                        <button class="upload-btn" id="uploadBtn">+ 选择图片</button>
+                        <input type="file" id="fileInput" accept="image/*" hidden>
+                        <p class="file-name" id="fileName"></p>
+                    </div>
+                </div>
+
+                <!-- 字幕设置 -->
+                <div class="section">
+                    <h2 class="section-title">字幕设置</h2>
+                    <div class="form-grid">
+                        <div class="form-item">
+                            <label>字幕高度</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="subtitleHeight" value="80" min="20" max="200">
+                                <span class="unit">px</span>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <label>字体大小</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="fontSize" value="40" min="12" max="100">
+                                <span class="unit">px</span>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <label>字体颜色</label>
+                            <div class="color-input">
+                                <input type="color" id="fontColor" value="#FFFFFF">
+                                <span class="color-value" id="fontColorValue">#FFFFFF</span>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <label>轮廓颜色</label>
+                            <div class="color-input">
+                                <input type="color" id="strokeColor" value="#000000">
+                                <span class="color-value" id="strokeColorValue">#000000</span>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <label>字体样式</label>
+                            <select id="fontFamily">
+                                <option value="Microsoft YaHei, sans-serif">微软雅黑</option>
+                                <option value="SimHei, sans-serif">黑体</option>
+                                <option value="SimSun, serif">宋体</option>
+                                <option value="KaiTi, serif">楷体</option>
+                                <option value="Arial, sans-serif">Arial</option>
+                            </select>
+                        </div>
+                        <div class="form-item">
+                            <label>字体粗细</label>
+                            <select id="fontWeight">
+                                <option value="normal">正常</option>
+                                <option value="bold">粗体</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 背景设置 -->
+                <div class="section">
+                    <h2 class="section-title">背景设置</h2>
+                    <div class="form-grid">
+                        <div class="form-item">
+                            <label>背景颜色</label>
+                            <div class="color-input">
+                                <input type="color" id="bgColor" value="#000000">
+                                <span class="color-value" id="bgColorValue">#000000</span>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <label>背景透明度</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="bgOpacity" value="50" min="0" max="100">
+                                <span class="unit">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 字幕内容 -->
+                <div class="section">
+                    <h2 class="section-title">字幕内容</h2>
+                    <textarea id="subtitleText" placeholder="请输入字幕内容，每行一条字幕..."></textarea>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="generateBtn">生成字幕图片</button>
+                    <button class="btn btn-secondary" id="saveBtn">保存图片</button>
+                </div>
+                <p class="status-message" id="statusMessage"></p>
+            </div>
+
+            <!-- 右侧预览面板 -->
+            <div class="panel preview-panel">
+                <h2 class="section-title">预览</h2>
+                <div class="preview-container">
+                    <div class="preview-placeholder" id="previewPlaceholder">
+                        <p>请先上传图片</p>
+                    </div>
+                    <canvas id="previewCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

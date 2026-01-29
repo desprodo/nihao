@@ -1,0 +1,16 @@
+{
+  "name": "love-advisor",
+  "version": "1.0.0",
+  "description": "恋爱军师 - AI 情感分析 H5 应用",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.0",
+    "express": "^4.18.2"
+  }
+}
